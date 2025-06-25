@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-Hant">
+<html lang="zh-TW">
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -12,62 +12,61 @@
 
         <!--內容區塊-->
         <main class="container-fluid mt-4">
+            <div class="center">
+                <h3>歡迎，{{ user }}（{{ role }}）</h3>
+            </div>
             <!--分成左右2邊的佈區-->
             <div class="row">
                 <div class="col-md-2">
                     {% include "menu.inc.twig" %}
                 </div>
-                <div class="col-md-10">
-                        <h2>全班課程總覽</h2>
-
-                        <div class="row row-cols-1 row-cols-md-2">
-                            <div class="card col-2">
-                                <div class="card-title"><b><strong>課程總時數</strong></b></div>
-                                <div class="card-body" id="total_class_hours"><p></p></div>
-                            </div>
-                            <div class="card col-2">
-                                <div class="card-title"><b><strong>實際上課時數</strong></b></div>
-                                <div class="card-body" id="total_attended_hours"><p></p></div>
-                            </div>
-                            <div class="card col-2">
-                                <div class="card-title"><b><strong>缺席時數</strong></b></div>
-                                <div class="card-body" id="total_absent_hours"><p></p></div>
-                            </div>
-                            <div class="card col-2">
-                                <div class="card-title"><b><strong>遲到時數</strong></b></div>
-                                <div class="card-body" id="total_late_hours"><p></p></div>
-                            </div>
-                            <div class="card col-2">
-                                <div class="card-title"><b><strong>早退時數</strong></b></div>
-                                <div class="card-body" id="total_leave_early_hours"><p></p></div>
-                            </div>
-                            <div class="card col-2">
-                                <div class="card-title"><b><strong>出勤比率</strong></b></div>
-                                <div class="card-body"><p></p></div>
-                            </div>
+                <div class="card col-md-5">
+                    <div calss="card-body">
+                        <h2 class="card-title">全班課程總覽</h2>
+                        <div class="summary-boxes">
+                            <div class="box">總課程時數：{{ total_class_hours }}</div>
+                            <div class="box">總課程數：{{ total_classs }}</div>
+                            <div class="box">總天數：{{ total_days }}</div>
+                            <div class="box">總出席率：{{ attendance_rate }}%</div>
+                            <div class="box">總遲到率：{{ late_rate }}%</div>
+                            <div class="box">總早退率：{{ leave_early_rate }}%</div>
+                            <div class="box">平均到校時數：{{ average_raw_hours }}</div>
                         </div>
+                    </div>
+                </div>
+                <div class="card col-md-5">
+                    <div class="card-body">
+                        <h2 class="card-title">各課程達成率</h2>
+                        <canvas id="classChart" width="600" height="300"></canvas>
+                    </div>
                 </div>
             </div>
-                        {# <div class="row">
-                            <div class="card col-4">
-                                <div class="card-title"><h4 style="text-align: center;"><b><strong>出席 vs 缺席（圓餅圖）</strong></b></h4></div>
-                                <div class="card-body"><canvas id="pieChart"></canvas></div>
-                            </div>
-
-                            <div class="card col-4">
-                                <div class="card-title"><h4 style="text-align: center;"><b><strong>每日課程時數（折線圖）</strong></b></h4></div>
-                                <div class="card-body"><canvas id="lineChart"></canvas></div>
-                            </div>
-
-                            <div class="card col-4">
-                                <div class="card-title"><h4 style="text-align: center;"><b><strong>每日在校時數（長條圖）</strong></b></h4></div>
-                                <div class="card-body"><canvas id="barChart"></canvas></div>
-                            </div>
-                        </div> #}
         </main>
-    
-    {% include "footer.inc.twig" %}
-
+    <footer class="position-absolute bottom-0">
+        {% include "footer.inc.twig" %}
+    </footer>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        const ctx = document.getElementById('classChart').getContext('2d');
+        const classChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: {{ class_names|json_encode|raw }},
+                datasets: [{
+                    label: '出席率 (%)',
+                    data: {{ class_attendance_rates|json_encode|raw }},
+                    backgroundColor: 'rgba(54, 162, 235, 0.6)',
+                    borderColor: 'rgba(54, 162, 235, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                scales: {
+                    y: { beginAtZero: true, max: 100 }
+                }
+            }
+        });
+    </script>
 </body>
 </html>
