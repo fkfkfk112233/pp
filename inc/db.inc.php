@@ -17,7 +17,7 @@
 
         try {
         $pdo = new PDO($dsn, $username, $password, $options);
-        echo "資料庫連接成功！<br>";
+        //echo "資料庫連接成功！<br>";
     } catch (PDOException $e) {
         // 連接失敗時捕獲異常並輸出錯誤訊息
         // 在實際專案中，不應該直接將詳細錯誤訊息顯示給使用者，應記錄到日誌檔，並給予使用者友善提示
