@@ -1,78 +1,43 @@
 <?php
-// 連線資料庫
-$pdo = new PDO("mysql:host=localhost;dbname=;charset=utf8", "root", "");
+session_start();
+require_once  __DIR__. '/../vendor/autoload.php';
 
+// 建立 Twig 環境
+$loader = new \Twig\Loader\FilesystemLoader(__DIR__ . '/../templates'); // 指向 templates 資料夾
+$twig = new \Twig\Environment($loader);
 
-// 取得使用者列表
+// 資料庫連線
+$pdo = new PDO("mysql:host=localhost;dbname=class_data;charset=utf8", "root", "");
+
+// 取得使用者清單
 $users = $pdo->query("SELECT * FROM users")->fetchAll(PDO::FETCH_ASSOC);
 
-// 取得當前使用者權限（預設第一位）
+// 確保有使用者
+if (!$users) {
+    die("尚未建立任何使用者");
+}
+
+// 取得當前選擇的使用者 ID
 $selectedUserId = $_GET['user_id'] ?? $users[0]['id'];
+
+// 查詢該使用者的權限
 $stmt = $pdo->prepare("SELECT * FROM permissions WHERE user_id = ?");
 $stmt->execute([$selectedUserId]);
 $permissions = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-// 權限以模組為鍵整理
+// 整理權限資料
 $permMap = [];
 foreach ($permissions as $p) {
-  $permMap[$p['module_name']] = $p;
+    $permMap[$p['module_name']] = $p;
 }
-?>
-<!DOCTYPE html>
-<html lang="zh-Hant">
-<head>
-  <meta charset="UTF-8">
-  <title>權限管理系統</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-</head>
-<body>
-<div class="container my-5">
-  <h2 class="mb-4">使用者權限管理</h2>
-  <form method="POST" action="save_permissions.php">
-    <div class="mb-3">
-      <label class="form-label">選擇使用者</label>
-      <select class="form-select" name="user_id" onchange="location.href='index.php?user_id=' + this.value">
-        <?php foreach ($users as $u): ?>
-          <option value="<?= $u['id'] ?>" <?= $selectedUserId == $u['id'] ? 'selected' : '' ?>>
-            <?= htmlspecialchars($u['name']) ?>
-          </option>
-        <?php endforeach; ?>
-      </select>
-    </div>
 
-    <!-- 權限表格 -->
-    <table class="table table-bordered">
-      <thead>
-        <tr>
-          <th>模組</th>
-          <th>查看</th>
-          <th>新增</th>
-          <th>編輯</th>
-          <th>刪除</th>
-        </tr>
-      </thead>
-      <tbody>
-        <?php
-        $modules = ['使用者管理', '文章管理', '報表分析'];
-        foreach ($modules as $module):
-          $perm = $permMap[$module] ?? ['can_view'=>0,'can_create'=>0,'can_edit'=>0,'can_delete'=>0];
-        ?>
-        <tr>
-          <td><?= $module ?></td>
-          <?php foreach (['view', 'create', 'edit', 'delete'] as $action): ?>
-            <td>
-              <input type="checkbox" name="perm[<?= $module ?>][<?= $action ?>]"
-                     <?= $perm["can_$action"] ? 'checked' : '' ?>>
-            </td>
-          <?php endforeach; ?>
-        </tr>
-        <?php endforeach; ?>
-      </tbody>
-    </table>
+// 模組清單
+$modules = ['使用者管理', '文章管理', '報表分析'];
 
-    <input type="hidden" name="user_id" value="<?= $selectedUserId ?>">
-    <button type="submit" class="btn btn-primary">儲存設定</button>
-  </form>
-</div>
-</body>
-</html>
+// 渲染 Twig 模板
+echo $twig->render('permission.twig', [
+    'users' => $users,
+    'selectedUserId' => $selectedUserId,
+    'permMap' => $permMap,
+    'modules' => $modules
+]);
