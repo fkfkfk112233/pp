@@ -63,10 +63,3 @@ echo $twig->render('dashboard.twig', [
     'chart_labels' => json_encode($chartLabels),
     'chart_data' => json_encode($chartData)
 ]);
-
-var_dump($useracc);
-$stmt = $pdo->prepare("SELECT DISTINCT name FROM attendance_log");
-$stmt->execute();
-$names = $stmt->fetchAll(PDO::FETCH_COLUMN);
-var_dump($names);
-exit;
