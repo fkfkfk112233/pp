@@ -6,16 +6,17 @@ require_once __DIR__ . '/../inc/db.inc.php';
 
 date_default_timezone_set('Asia/Taipei');
 
-// 檢查登入
+// 檢查登入狀態
 if (!isset($_SESSION['backend_login_flag']) || $_SESSION['backend_login_flag'] !== true) {
     header("location: login.php?message=nologin");
     exit;
 }
 
 // 取得登入資訊
-$role = $_SESSION['role'] ?? '';
 $useracc = $_SESSION['backend_login_acc'] ?? '';
+$role = $_SESSION['backend_login_role'] ?? ''; // <-- 注意這裡改為正確欄位
 
+// SQL 條件
 $where = "";
 $params = [];
 
@@ -41,25 +42,21 @@ $stmt = $pdo->prepare("
 $stmt->execute($params);
 $summary = $stmt->fetch(PDO::FETCH_ASSOC);
 
-// 預設值處理（防 null）
-$summary = array_map(function ($value) {
-    return $value ?? 0;
-}, $summary);
+// 預設值處理
+$summary = array_map(fn($v) => $v ?? 0, $summary);
 
 // 計算百分比
 $attendance_rate = ($summary['total_class_hours'] > 0) 
     ? round(($summary['total_attended'] / $summary['total_class_hours']) * 100, 1) 
     : 0;
-
 $late_rate = ($summary['total_class_hours'] > 0) 
     ? round(($summary['total_late'] / $summary['total_class_hours']) * 100, 1) 
     : 0;
-
 $early_rate = ($summary['total_class_hours'] > 0) 
     ? round(($summary['total_early'] / $summary['total_class_hours']) * 100, 1) 
     : 0;
 
-// 8 課程出席率資料
+// 8 各課程出席率圖表資料
 $stmt2 = $pdo->prepare("
     SELECT 
         c.class_name, 
@@ -73,16 +70,16 @@ $stmt2 = $pdo->prepare("
 $stmt2->execute($params);
 $courseStats = $stmt2->fetchAll(PDO::FETCH_ASSOC);
 
-$chartLabels = [];
-$chartData = [];
+$class_names = [];
+$attendance_rates = [];
 
 foreach ($courseStats as $row) {
-    $chartLabels[] = $row['class_name'];
+    $class_names[] = $row['class_name'];
     $rate = ($row['total'] > 0) ? round(($row['attended'] / $row['total']) * 100, 2) : 0;
-    $chartData[] = $rate;
+    $attendance_rates[] = $rate;
 }
 
-// 傳到 Twig
+// 傳到 Twig 模板
 echo $twig->render('dashboard.twig', [
     'useracc' => $useracc,
     'role' => $role,
@@ -93,6 +90,6 @@ echo $twig->render('dashboard.twig', [
     'late_rate' => $late_rate,
     'leave_early_rate' => $early_rate,
     'average_raw_hours' => round($summary['avg_raw'], 1),
-    'class_names' => $chartLabels,
-    'class_attendance_rates' => $chartData
+    'class_names' => $class_names,
+    'class_attendance_rates' => $attendance_rates
 ]);
