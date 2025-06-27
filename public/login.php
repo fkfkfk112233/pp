@@ -39,7 +39,7 @@ if (isset($_GET['message']) && $_GET['message'] != "") {
 
 // 登入表單提交處理
 if ($_SERVER['REQUEST_METHOD'] === "POST") {
-    $acc = $_POST["name"];
+    $acc = $_POST["user"];
     $pwd = $_POST["password"];
 
     if (!empty($acc) && !empty($pwd)) {
@@ -55,9 +55,8 @@ if ($_SERVER['REQUEST_METHOD'] === "POST") {
 
             // 設定登入 session
             $_SESSION['backend_login_flag'] = true;
-            $_SESSION['backend_login_acc'] = $user['name'];
-            $_SESSION['backend_login_name'] = $user['name'];
-            $_SESSION['backend_login_role'] = $user['role'];
+            $_SESSION['backend_login_acc'] = $user['user'];
+            $_SESSION['role'] = $user['role'];
 
             header("Location: dashboard.php");
             exit;

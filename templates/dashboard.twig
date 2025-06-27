@@ -13,7 +13,7 @@
         <!--內容區塊-->
         <main class="container-fluid mt-4">
             <div class="center">
-                <h3>歡迎，{{ user }}（{{ role }}）</h3>
+                <h3>歡迎，{{ useracc }}（{{ role }}）</h3>
             </div>
             <!--分成左右2邊的佈區-->
             <div class="row">
@@ -22,19 +22,19 @@
                 </div>
                 <div class="card col-md-5">
                     <div calss="card-body">
-                            <h2 class="card-title">全班課程總覽</h2>
-                            <div class="box">總課程時數：{{ total_class_hours }}</div>
-                            <div class="box">總課程數：{{ total_classs }}</div>
-                            <div class="box">總天數：{{ total_days }}</div>
-                            <div class="box">總出席率：{{ attendance_rate }}%</div>
-                            <div class="box">總遲到率：{{ late_rate }}%</div>
-                            <div class="box">總早退率：{{ leave_early_rate }}%</div>
-                            <div class="box">平均到校時數：{{ average_raw_hours }}</div>
+                            <h2 class="card-header" style:"width:100%">全班課程總覽</h2>
+                            <p class="card-text">總課程時數：{{ total_class_hours }}</p>
+                            <p class="card-text">總課程數：{{ total_classs }}</p>
+                            <p class="card-text">總天數：{{ total_days }}</p>
+                            <p class="card-text">總出席率：{{ attendance_rate }}%</p>
+                            <p class="card-text">總遲到率：{{ late_rate }}%</p>
+                            <p class="card-text">總早退率：{{ leave_early_rate }}%</p>
+                            <p class="card-text">平均到校時數：{{ average_raw_hours }}</p>
                     </div>
                 </div>
                 <div class="card col-md-5">
                     <div class="card-body">
-                        <h2 class="card-title">各課程達成率</h2>
+                        <h2 class="card-header" style:"width:100%">各課程達成率</h2>
                         <canvas id="classChart" width="600" height="300"></canvas>
                     </div>
                 </div>
@@ -46,6 +46,10 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
+
+        labels: {{ class_names|json_encode|raw }},
+        data: {{ class_attendance_rates|json_encode|raw }},
+
         const ctx = document.getElementById('classChart').getContext('2d');
         const classChart = new Chart(ctx, {
             type: 'bar',
