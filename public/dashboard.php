@@ -23,6 +23,12 @@ $params = [];
 if ($role === '一般') {
     $where = "WHERE al.name = :name";
     $params[':name'] = $useracc;
+}elseif ($role === '管理者') {
+    // 不加條件 => 可查看所有人資料
+    $where = "";  // 或保留空字串
+} else {
+    // 其他角色預防性拒絕（例如未授權角色）
+    die("未授權的角色");
 }
 
 // 1~7 統計資料
