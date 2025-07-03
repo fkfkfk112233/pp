@@ -47,7 +47,7 @@ if ($_SERVER['REQUEST_METHOD'] === "POST") {
         $stmt = $pdo->prepare("SELECT user, password, role FROM users WHERE user = :user AND password = :password");
         $stmt->execute([
             ":user" => $acc,
-            ":password" => $pwd
+            ":password" => $pwd,
         ]);
 
         if ($stmt->rowCount() === 1) {
@@ -56,7 +56,7 @@ if ($_SERVER['REQUEST_METHOD'] === "POST") {
             // 設定登入 session
             $_SESSION['backend_login_flag'] = true;
             $_SESSION['backend_login_acc'] = $user['user'];
-            $_SESSION['role'] = $user['role'];
+            $_SESSION['backend_login_role'] = $user['role'];
 
             header("Location: dashboard.php");
             exit;
