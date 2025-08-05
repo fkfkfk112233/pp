@@ -2,6 +2,20 @@
 session_start();
 require_once  __DIR__. '/../vendor/autoload.php';
 
+// 檢查登入狀態
+if (!isset($_SESSION['backend_login_flag']) || $_SESSION['backend_login_flag'] !== true) {
+    header("location: login.php?message=nologin");
+    exit;
+}
+
+// 檢查系統管理員權限
+$role = $_SESSION['backend_login_role'] ?? '';
+if ($role !== '管理者') {
+    // 非管理者角色，拒絕存取
+    header("location: dashboard.php?message=no_permission");
+    exit;
+}
+
 // 建立 Twig 環境
 $loader = new \Twig\Loader\FilesystemLoader(__DIR__ . '/../templates'); // 指向 templates 資料夾
 $twig = new \Twig\Environment($loader);
@@ -34,8 +48,13 @@ foreach ($permissions as $p) {
 // 模組清單
 $modules = ['使用者管理', '文章管理', '報表分析'];
 
+// 取得當前登入用戶信息（傳遞給模板）
+$useracc = $_SESSION['backend_login_acc'] ?? '';
+
 // 渲染 Twig 模板
 echo $twig->render('permission.twig', [
+    'useracc' => $useracc,
+    'role' => $role,
     'users' => $users,
     'selectedUserId' => $selectedUserId,
     'permMap' => $permMap,

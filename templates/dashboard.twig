@@ -15,6 +15,52 @@
             <div class="center">
                 <h3>歡迎，{{ useracc }}（{{ role }}）</h3>
             </div>
+            
+            <!-- 訊息顯示區域 -->
+            {% if message %}
+            <div class="row mb-3">
+                <div class="col-12">
+                    <div class="alert {{ alert_type }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- 管理者學員選擇區域 -->
+            {% if role == '管理者' %}
+            <div class="row mb-3">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header bg-info text-white">
+                            <h6 class="mb-0">學員資料查看選項</h6>
+                        </div>
+                        <div class="card-body">
+                            <form method="GET" class="d-flex align-items-center gap-3">
+                                <div class="form-group">
+                                    <label for="selected_user" class="form-label">選擇學員：</label>
+                                    <select name="selected_user" id="selected_user" class="form-select" onchange="this.form.submit()">
+                                        <option value="">所有學員統計</option>
+                                        {% for user in userList %}
+                                            <option value="{{ user }}" {% if selectedUser == user %}selected{% endif %}>{{ user }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div>
+                                    {% if selectedUser %}
+                                        <span class="badge bg-primary">正在查看：{{ selectedUser }}</span>
+                                    {% else %}
+                                        <span class="badge bg-success">正在查看：全體學員</span>
+                                    {% endif %}
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+            
             <!--分成左右2邊的佈區-->
             <div class="row align-items-stretch">
                 <!-- 側邊選單 -->
@@ -26,7 +72,17 @@
                 <div class="col-md-5">
                     <div class="card mb-3 shadow-sm rounded-4">
                         <div class="card-header bg-primary text-white">
-                            <h5 class="mb-0">全班課程總覽</h5>
+                            <h5 class="mb-0">
+                                {% if role == '管理者' %}
+                                    {% if selectedUser %}
+                                        {{ selectedUser }} 的課程統計
+                                    {% else %}
+                                        全體學員課程統計
+                                    {% endif %}
+                                {% else %}
+                                    個人課程統計
+                                {% endif %}
+                            </h5>
                         </div>
                         <div class="card-body">
                             <p class="card-text">總課程時數：<strong>{{ total_class_hours }}</strong></p>
@@ -44,7 +100,17 @@
                 <div class="col-md-5">
                     <div class="card mb-3 shadow-sm rounded-4">
                         <div class="card-header bg-primary text-white">
-                            <h5 class="mb-0">各課程達成率</h5>
+                            <h5 class="mb-0">
+                                {% if role == '管理者' %}
+                                    {% if selectedUser %}
+                                        {{ selectedUser }} 的各課程出席率
+                                    {% else %}
+                                        全體學員各課程出席率
+                                    {% endif %}
+                                {% else %}
+                                    個人各課程出席率
+                                {% endif %}
+                            </h5>
                         </div>
                         <div class="card-body">
                             <canvas id="classChart" width="100%" height="60"></canvas>

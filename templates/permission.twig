@@ -21,7 +21,7 @@
             <form method="POST" action="save_permissions.php">
                 <div class="mb-3">
                 <label class="form-label">選擇使用者</label>
-                <select class="form-select" name="user_id" onchange="location.href='index.php?user_id=' + this.value">
+                <select class="form-select" name="user_id" onchange="location.href='permission.php?user_id=' + this.value">
                     {% for u in users %}
                     <option value="{{ u.id }}" {{ selectedUserId == u.id ? 'selected' : '' }}>
                         {{ u.name }}

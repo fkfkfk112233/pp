@@ -12,9 +12,36 @@ if (!isset($_SESSION['backend_login_flag']) || $_SESSION['backend_login_flag'] !
     exit;
 }
 
+// 處理訊息顯示
+$message = "";
+$alert_type = "";
+
+if (isset($_GET['message']) && $_GET['message'] != "") {
+    switch ($_GET['message']) {
+        case 'no_permission':
+            $message = "您沒有權限存取該頁面";
+            $alert_type = "alert-danger";
+            break;
+    }
+}
+
 // 取得登入資訊
 $useracc = $_SESSION['backend_login_acc'] ?? '';
 $role = $_SESSION['backend_login_role'] ?? ''; // <-- 注意這裡改為正確欄位
+
+// 如果是管理者，取得所有學員清單供選擇
+$userList = [];
+$selectedUser = '';
+
+if ($role === '管理者') {
+    // 取得所有學員清單
+    $stmt_users = $pdo->prepare("SELECT DISTINCT name FROM attendance_log ORDER BY name");
+    $stmt_users->execute();
+    $userList = $stmt_users->fetchAll(PDO::FETCH_COLUMN);
+    
+    // 取得選擇的學員（如果有的話）
+    $selectedUser = $_GET['selected_user'] ?? '';
+}
 
 // SQL 條件
 $where = "";
@@ -23,9 +50,16 @@ $params = [];
 if ($role === '一般') {
     $where = "WHERE al.name = :name";
     $params[':name'] = $useracc;
+    $selectedUser = $useracc; // 一般使用者只能看自己
 }elseif ($role === '管理者') {
-    // 不加條件 => 可查看所有人資料
-    $where = "";  // 或保留空字串
+    if (!empty($selectedUser)) {
+        // 管理者選擇查看特定學員
+        $where = "WHERE al.name = :name";
+        $params[':name'] = $selectedUser;
+    } else {
+        // 管理者查看所有人資料
+        $where = "";
+    }
 } else {
     // 其他角色預防性拒絕（例如未授權角色）
     die("未授權的角色");
@@ -89,6 +123,10 @@ foreach ($courseStats as $row) {
 echo $twig->render('dashboard.twig', [
     'useracc' => $useracc,
     'role' => $role,
+    'message' => $message,
+    'alert_type' => $alert_type,
+    'userList' => $userList,
+    'selectedUser' => $selectedUser,
     'total_class_hours' => $summary['total_class_hours'],
     'total_classs' => $summary['total_courses'],
     'total_days' => $summary['total_days'],
