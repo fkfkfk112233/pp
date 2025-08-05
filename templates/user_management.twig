@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <title>使用者管理系統</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css" rel="stylesheet">
+</head>
+<body>
+{% include "nav.inc.twig" %}
+
+<!--內容區塊-->
+<main class="container-fluid mt-4">
+    <div class="row">
+        <div class="col-md-2">
+            {% include "menu.inc.twig" %}
+        </div>
+        <div class="col-md-10">
+            <h2 class="mb-4"><i class="bi bi-people"></i> 使用者管理</h2>
+
+            <!-- 訊息顯示區域 -->
+            {% if message %}
+            <div class="alert {{ alert_type }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+            {% endif %}
+
+            <!-- 搜尋與新增區域 -->
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="bi bi-search"></i> 搜尋與管理</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <!-- 搜尋表單 -->
+                        <div class="col-md-8">
+                            <form method="GET" class="d-flex gap-3 align-items-end">
+                                <div class="form-group">
+                                    <label for="search_username" class="form-label">使用者名稱</label>
+                                    <input type="text" class="form-control" id="search_username" name="search_username" value="{{ search_username }}" placeholder="輸入使用者名稱">
+                                </div>
+                                <div class="form-group">
+                                    <label for="search_role" class="form-label">角色</label>
+                                    <select class="form-select" id="search_role" name="search_role">
+                                        <option value="">所有角色</option>
+                                        {% for role_option in roles %}
+                                            <option value="{{ role_option }}" {% if search_role == role_option %}selected{% endif %}>{{ role_option }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <button type="submit" class="btn btn-outline-primary"><i class="bi bi-search"></i> 搜尋</button>
+                                <a href="user_management.php" class="btn btn-outline-secondary"><i class="bi bi-arrow-clockwise"></i> 重置</a>
+                            </form>
+                        </div>
+                        <!-- 新增按鈕 -->
+                        <div class="col-md-4 text-end">
+                            <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#addUserModal">
+                                <i class="bi bi-person-plus"></i> 新增使用者
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 統計資訊 -->
+            <div class="alert alert-info">
+                <i class="bi bi-info-circle"></i> 共找到 <strong>{{ total_records }}</strong> 個使用者
+            </div>
+
+            <!-- 使用者表格 -->
+            <div class="card">
+                <div class="card-header bg-secondary text-white">
+                    <h5 class="mb-0"><i class="bi bi-table"></i> 使用者列表</h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover mb-0">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>ID</th>
+                                    <th>使用者名稱</th>
+                                    <th>角色</th>
+                                    <th>權限說明</th>
+                                    <th width="150">操作</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for user in users %}
+                                <tr {% if user.user == current_user %}class="table-warning"{% endif %}>
+                                    <td>{{ user.id }}</td>
+                                    <td>
+                                        <span class="badge bg-primary">{{ user.user }}</span>
+                                        {% if user.user == current_user %}
+                                            <span class="badge bg-warning text-dark ms-1">目前登入</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if user.role == '系統管理員' %}
+                                            <span class="badge bg-danger">{{ user.role }}</span>
+                                        {% elseif user.role == '管理者' %}
+                                            <span class="badge bg-warning text-dark">{{ user.role }}</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">{{ user.role }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <small class="text-muted">
+                                            {% if user.role == '系統管理員' %}
+                                                完整系統管理權限
+                                            {% elseif user.role == '管理者' %}
+                                                查看所有學員資料
+                                            {% else %}
+                                                查看個人資料
+                                            {% endif %}
+                                        </small>
+                                    </td>
+                                    <td>
+                                        <button class="btn btn-sm btn-outline-primary" onclick="editUser({{ user|json_encode|e('html_attr') }})">
+                                            <i class="bi bi-pencil"></i>
+                                        </button>
+                                        {% if user.user != current_user %}
+                                        <button class="btn btn-sm btn-outline-danger" onclick="deleteUser({{ user.id }}, '{{ user.user }}')">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                        {% else %}
+                                        <button class="btn btn-sm btn-outline-secondary" disabled title="不能刪除自己">
+                                            <i class="bi bi-shield-check"></i>
+                                        </button>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% else %}
+                                <tr>
+                                    <td colspan="5" class="text-center text-muted py-4">
+                                        <i class="bi bi-inbox"></i> 沒有找到符合條件的使用者
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 分頁 -->
+            {% if total_pages > 1 %}
+            <nav aria-label="Page navigation" class="mt-4">
+                <ul class="pagination justify-content-center">
+                    {% if current_page > 1 %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ current_page - 1 }}&search_username={{ search_username }}&search_role={{ search_role }}">上一頁</a>
+                        </li>
+                    {% endif %}
+                    
+                    {% for page in 1..total_pages %}
+                        <li class="page-item {{ current_page == page ? 'active' : '' }}">
+                            <a class="page-link" href="?page={{ page }}&search_username={{ search_username }}&search_role={{ search_role }}">{{ page }}</a>
+                        </li>
+                    {% endfor %}
+                    
+                    {% if current_page < total_pages %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ current_page + 1 }}&search_username={{ search_username }}&search_role={{ search_role }}">下一頁</a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+        </div>
+    </div>
+</main>
+
+<!-- 新增使用者Modal -->
+<div class="modal fade" id="addUserModal" tabindex="-1" aria-labelledby="addUserModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title" id="addUserModalLabel"><i class="bi bi-person-plus"></i> 新增使用者</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="POST" id="addUserForm">
+                <div class="modal-body">
+                    <input type="hidden" name="action" value="add_user">
+                    <div class="mb-3">
+                        <label for="add_username" class="form-label">使用者名稱 *</label>
+                        <input type="text" class="form-control" id="add_username" name="username" required>
+                        <div class="form-text">使用者名稱將用於登入</div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="add_password" class="form-label">密碼 *</label>
+                        <input type="password" class="form-control" id="add_password" name="password" required>
+                        <div class="form-text">請設定安全的密碼</div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="add_role" class="form-label">角色 *</label>
+                        <select class="form-select" id="add_role" name="role" required>
+                            <option value="">請選擇角色</option>
+                            {% for role_option in roles %}
+                                <option value="{{ role_option }}">{{ role_option }}</option>
+                            {% endfor %}
+                        </select>
+                        <div class="form-text">
+                            <small>
+                                <strong>一般：</strong>查看個人資料<br>
+                                <strong>管理者：</strong>查看所有學員資料<br>
+                                <strong>系統管理員：</strong>完整管理權限
+                            </small>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="submit" class="btn btn-success"><i class="bi bi-check-circle"></i> 新增</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- 編輯使用者Modal -->
+<div class="modal fade" id="editUserModal" tabindex="-1" aria-labelledby="editUserModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="editUserModalLabel"><i class="bi bi-pencil"></i> 編輯使用者</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="POST" id="editUserForm">
+                <div class="modal-body">
+                    <input type="hidden" name="action" value="edit_user">
+                    <input type="hidden" name="user_id" id="edit_user_id">
+                    <div class="mb-3">
+                        <label for="edit_username" class="form-label">使用者名稱 *</label>
+                        <input type="text" class="form-control" id="edit_username" name="username" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit_password" class="form-label">新密碼</label>
+                        <input type="password" class="form-control" id="edit_password" name="password">
+                        <div class="form-text">留空表示不更改密碼</div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit_role" class="form-label">角色 *</label>
+                        <select class="form-select" id="edit_role" name="role" required>
+                            {% for role_option in roles %}
+                                <option value="{{ role_option }}">{{ role_option }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="submit" class="btn btn-primary"><i class="bi bi-check-circle"></i> 更新</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- 刪除確認Modal -->
+<div class="modal fade" id="deleteUserModal" tabindex="-1" aria-labelledby="deleteUserModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title" id="deleteUserModalLabel"><i class="bi bi-exclamation-triangle"></i> 確認刪除</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>您確定要刪除使用者 <strong id="delete_username"></strong> 嗎？</p>
+                <div class="alert alert-warning">
+                    <i class="bi bi-exclamation-triangle"></i> 
+                    <strong>警告：</strong>刪除使用者後，該使用者將無法再登入系統，此操作無法復原！
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <form method="POST" style="display: inline;">
+                    <input type="hidden" name="action" value="delete_user">
+                    <input type="hidden" name="user_id" id="delete_user_id">
+                    <button type="submit" class="btn btn-danger"><i class="bi bi-trash"></i> 確認刪除</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% include "footer.inc.twig" %}
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+function editUser(user) {
+    document.getElementById('edit_user_id').value = user.id;
+    document.getElementById('edit_username').value = user.user;
+    document.getElementById('edit_password').value = ''; // 清空密碼欄位
+    document.getElementById('edit_role').value = user.role;
+    
+    var editModal = new bootstrap.Modal(document.getElementById('editUserModal'));
+    editModal.show();
+}
+
+function deleteUser(id, username) {
+    document.getElementById('delete_user_id').value = id;
+    document.getElementById('delete_username').textContent = username;
+    
+    var deleteModal = new bootstrap.Modal(document.getElementById('deleteUserModal'));
+    deleteModal.show();
+}
+
+// 表單驗證
+document.getElementById('addUserForm').addEventListener('submit', function(e) {
+    var username = document.getElementById('add_username').value.trim();
+    var password = document.getElementById('add_password').value;
+    
+    if (username.length < 2) {
+        e.preventDefault();
+        alert('使用者名稱至少需要2個字元');
+        return;
+    }
+    
+    if (password.length < 4) {
+        e.preventDefault();
+        alert('密碼至少需要4個字元');
+        return;
+    }
+});
+</script>
+</body>
+</html>
