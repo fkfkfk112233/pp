@@ -29,7 +29,7 @@
             {% endif %}
             
             <!-- 管理者學員選擇區域 -->
-            {% if role == '管理者' %}
+            {% if role == '管理者' or role == '系統管理員' %}
             <div class="row mb-3">
                 <div class="col-12">
                     <div class="card">
@@ -73,7 +73,7 @@
                     <div class="card mb-3 shadow-sm rounded-4">
                         <div class="card-header bg-primary text-white">
                             <h5 class="mb-0">
-                                {% if role == '管理者' %}
+                                {% if role == '管理者' or role == '系統管理員' %}
                                     {% if selectedUser %}
                                         {{ selectedUser }} 的課程統計
                                     {% else %}
@@ -101,7 +101,7 @@
                     <div class="card mb-3 shadow-sm rounded-4">
                         <div class="card-header bg-primary text-white">
                             <h5 class="mb-0">
-                                {% if role == '管理者' %}
+                                {% if role == '管理者' or role == '系統管理員' %}
                                     {% if selectedUser %}
                                         {{ selectedUser }} 的各課程出席率
                                     {% else %}

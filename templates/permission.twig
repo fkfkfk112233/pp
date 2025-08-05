@@ -2,12 +2,12 @@
 <html lang="zh-Hant">
 <head>
     <meta charset="UTF-8">
-    <title>權限管理系統</title>
+    <title>系統管理 - 打卡紀錄管理</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css" rel="stylesheet">
 </head>
 <body>
 {% include "nav.inc.twig" %}
-
 
 <!--內容區塊-->
 <main class="container-fluid mt-4">
@@ -16,57 +16,350 @@
             {% include "menu.inc.twig" %}
         </div>
         <div class="col-md-10">
-            <h2 class="mb-4">使用者權限管理</h2>
+            <h2 class="mb-4"><i class="bi bi-clock-history"></i> 打卡紀錄管理</h2>
 
-            <form method="POST" action="save_permissions.php">
-                <div class="mb-3">
-                <label class="form-label">選擇使用者</label>
-                <select class="form-select" name="user_id" onchange="location.href='permission.php?user_id=' + this.value">
-                    {% for u in users %}
-                    <option value="{{ u.id }}" {{ selectedUserId == u.id ? 'selected' : '' }}>
-                        {{ u.name }}
-                    </option>
-                    {% endfor %}
-                </select>
+            <!-- 訊息顯示區域 -->
+            {% if message %}
+            <div class="alert {{ alert_type }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+            {% endif %}
+
+            <!-- 搜尋與新增區域 -->
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="bi bi-search"></i> 搜尋與管理</h5>
                 </div>
+                <div class="card-body">
+                    <div class="row">
+                        <!-- 搜尋表單 -->
+                        <div class="col-md-8">
+                            <form method="GET" class="d-flex gap-3 align-items-end">
+                                <div class="form-group">
+                                    <label for="search_name" class="form-label">學員姓名</label>
+                                    <input type="text" class="form-control" id="search_name" name="search_name" value="{{ search_name }}" placeholder="輸入學員姓名">
+                                </div>
+                                <div class="form-group">
+                                    <label for="search_date" class="form-label">上課日期</label>
+                                    <input type="date" class="form-control" id="search_date" name="search_date" value="{{ search_date }}">
+                                </div>
+                                <button type="submit" class="btn btn-outline-primary"><i class="bi bi-search"></i> 搜尋</button>
+                                <a href="permission.php" class="btn btn-outline-secondary"><i class="bi bi-arrow-clockwise"></i> 重置</a>
+                            </form>
+                        </div>
+                        <!-- 新增按鈕 -->
+                        <div class="col-md-4 text-end">
+                            <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#addModal">
+                                <i class="bi bi-plus-circle"></i> 新增打卡紀錄
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
-            <!-- 權限表格 -->
-            <table class="table table-bordered">
-                <thead>
-                    <tr>
-                    <th>模組</th>
-                    <th>查看</th>
-                    <th>新增</th>
-                    <th>編輯</th>
-                    <th>刪除</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for module in modules %}
-                    {% set perm = permMap[module]|default({'can_view':0,'can_create':0,'can_edit':0,'can_delete':0}) %}
-                    <tr>
-                        <td>{{ module }}</td>
-                        {% for action in ['view', 'create', 'edit', 'delete'] %}
-                        <td>
-                            <input type="checkbox"
-                                name="perm[{{ module }}][{{ action }}]"
-                                {{ attribute(perm, 'can_' ~ action) ? 'checked' : '' }}>
-                        </td>
-                        {% endfor %}
-                    </tr>
+            <!-- 統計資訊 -->
+            <div class="alert alert-info">
+                <i class="bi bi-info-circle"></i> 共找到 <strong>{{ total_records }}</strong> 筆紀錄
+            </div>
+
+            <!-- 打卡紀錄表格 -->
+            <div class="card">
+                <div class="card-header bg-secondary text-white">
+                    <h5 class="mb-0"><i class="bi bi-table"></i> 打卡紀錄列表</h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover mb-0">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>ID</th>
+                                    <th>學員姓名</th>
+                                    <th>上課日期</th>
+                                    <th>課程時數</th>
+                                    <th>實際時數</th>
+                                    <th>出席時數</th>
+                                    <th>遲到時數</th>
+                                    <th>早退時數</th>
+                                    <th>缺席時數</th>
+                                    <th width="120">操作</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for record in attendance_records %}
+                                <tr>
+                                    <td>{{ record.id }}</td>
+                                    <td><span class="badge bg-primary">{{ record.name }}</span></td>
+                                    <td>{{ record.class_date }}</td>
+                                    <td>{{ record.class_hours }}</td>
+                                    <td>{{ record.raw_hours }}</td>
+                                    <td><span class="text-success fw-bold">{{ record.attended_hours }}</span></td>
+                                    <td><span class="text-warning">{{ record.late_hours }}</span></td>
+                                    <td><span class="text-warning">{{ record.leave_early_hours }}</span></td>
+                                    <td><span class="text-danger">{{ record.absent_hours }}</span></td>
+                                    <td>
+                                        <button class="btn btn-sm btn-outline-primary" onclick="editRecord({{ record|json_encode|e('html_attr') }})">
+                                            <i class="bi bi-pencil"></i>
+                                        </button>
+                                        <button class="btn btn-sm btn-outline-danger" onclick="deleteRecord({{ record.id }}, '{{ record.name }}')">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                {% else %}
+                                <tr>
+                                    <td colspan="10" class="text-center text-muted py-4">
+                                        <i class="bi bi-inbox"></i> 沒有找到符合條件的紀錄
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 分頁 -->
+            {% if total_pages > 1 %}
+            <nav aria-label="Page navigation" class="mt-4">
+                <ul class="pagination justify-content-center">
+                    {% if current_page > 1 %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ current_page - 1 }}&search_name={{ search_name }}&search_date={{ search_date }}">上一頁</a>
+                        </li>
+                    {% endif %}
+                    
+                    {% for page in 1..total_pages %}
+                        <li class="page-item {{ current_page == page ? 'active' : '' }}">
+                            <a class="page-link" href="?page={{ page }}&search_name={{ search_name }}&search_date={{ search_date }}">{{ page }}</a>
+                        </li>
                     {% endfor %}
-                </tbody>
-            </table>
+                    
+                    {% if current_page < total_pages %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ current_page + 1 }}&search_name={{ search_name }}&search_date={{ search_date }}">下一頁</a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+        </div>
+    </div>
+</main>
 
-                <input type="hidden" name="user_id" value="{{ selectedUserId }}">
-                <button type="submit" class="btn btn-primary">儲存設定</button>
+<!-- 新增Modal -->
+<div class="modal fade" id="addModal" tabindex="-1" aria-labelledby="addModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title" id="addModalLabel"><i class="bi bi-plus-circle"></i> 新增打卡紀錄</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="POST" id="addForm">
+                <div class="modal-body">
+                    <input type="hidden" name="action" value="add">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="add_name" class="form-label">學員姓名 *</label>
+                                <input type="text" class="form-control" id="add_name" name="name" list="studentsList" required>
+                                <datalist id="studentsList">
+                                    {% for student in students %}
+                                        <option value="{{ student }}">
+                                    {% endfor %}
+                                </datalist>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="add_class_date" class="form-label">上課日期 *</label>
+                                <input type="date" class="form-control" id="add_class_date" name="class_date" required>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="add_class_hours" class="form-label">課程時數 *</label>
+                                <input type="number" step="0.1" class="form-control" id="add_class_hours" name="class_hours" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="add_raw_hours" class="form-label">實際時數 *</label>
+                                <input type="number" step="0.1" class="form-control" id="add_raw_hours" name="raw_hours" required>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="add_attended_hours" class="form-label">出席時數 *</label>
+                                <input type="number" step="0.1" class="form-control" id="add_attended_hours" name="attended_hours" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="add_late_hours" class="form-label">遲到時數</label>
+                                <input type="number" step="0.1" class="form-control" id="add_late_hours" name="late_hours" value="0">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="add_leave_early_hours" class="form-label">早退時數</label>
+                                <input type="number" step="0.1" class="form-control" id="add_leave_early_hours" name="leave_early_hours" value="0">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="add_absent_hours" class="form-label">缺席時數</label>
+                                <input type="number" step="0.1" class="form-control" id="add_absent_hours" name="absent_hours" value="0">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="submit" class="btn btn-success"><i class="bi bi-check-circle"></i> 新增</button>
+                </div>
             </form>
         </div>
     </div>
-<main>
+</div>
 
-    {% include "footer.inc.twig" %}
+<!-- 編輯Modal -->
+<div class="modal fade" id="editModal" tabindex="-1" aria-labelledby="editModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="editModalLabel"><i class="bi bi-pencil"></i> 編輯打卡紀錄</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="POST" id="editForm">
+                <div class="modal-body">
+                    <input type="hidden" name="action" value="edit">
+                    <input type="hidden" name="id" id="edit_id">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="edit_name" class="form-label">學員姓名 *</label>
+                                <input type="text" class="form-control" id="edit_name" name="name" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="edit_class_date" class="form-label">上課日期 *</label>
+                                <input type="date" class="form-control" id="edit_class_date" name="class_date" required>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="edit_class_hours" class="form-label">課程時數 *</label>
+                                <input type="number" step="0.1" class="form-control" id="edit_class_hours" name="class_hours" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="edit_raw_hours" class="form-label">實際時數 *</label>
+                                <input type="number" step="0.1" class="form-control" id="edit_raw_hours" name="raw_hours" required>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="edit_attended_hours" class="form-label">出席時數 *</label>
+                                <input type="number" step="0.1" class="form-control" id="edit_attended_hours" name="attended_hours" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="edit_late_hours" class="form-label">遲到時數</label>
+                                <input type="number" step="0.1" class="form-control" id="edit_late_hours" name="late_hours">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="edit_leave_early_hours" class="form-label">早退時數</label>
+                                <input type="number" step="0.1" class="form-control" id="edit_leave_early_hours" name="leave_early_hours">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="edit_absent_hours" class="form-label">缺席時數</label>
+                                <input type="number" step="0.1" class="form-control" id="edit_absent_hours" name="absent_hours">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="submit" class="btn btn-primary"><i class="bi bi-check-circle"></i> 更新</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<!-- 刪除確認Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title" id="deleteModalLabel"><i class="bi bi-exclamation-triangle"></i> 確認刪除</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>您確定要刪除 <strong id="delete_record_info"></strong> 的打卡紀錄嗎？</p>
+                <p class="text-danger"><i class="bi bi-exclamation-triangle"></i> 此操作無法復原！</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <form method="POST" style="display: inline;">
+                    <input type="hidden" name="action" value="delete">
+                    <input type="hidden" name="id" id="delete_id">
+                    <button type="submit" class="btn btn-danger"><i class="bi bi-trash"></i> 確認刪除</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% include "footer.inc.twig" %}
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+function editRecord(record) {
+    document.getElementById('edit_id').value = record.id;
+    document.getElementById('edit_name').value = record.name;
+    document.getElementById('edit_class_date').value = record.class_date;
+    document.getElementById('edit_class_hours').value = record.class_hours;
+    document.getElementById('edit_raw_hours').value = record.raw_hours;
+    document.getElementById('edit_attended_hours').value = record.attended_hours;
+    document.getElementById('edit_late_hours').value = record.late_hours;
+    document.getElementById('edit_leave_early_hours').value = record.leave_early_hours;
+    document.getElementById('edit_absent_hours').value = record.absent_hours;
+    
+    var editModal = new bootstrap.Modal(document.getElementById('editModal'));
+    editModal.show();
+}
+
+function deleteRecord(id, name) {
+    document.getElementById('delete_id').value = id;
+    document.getElementById('delete_record_info').textContent = name;
+    
+    var deleteModal = new bootstrap.Modal(document.getElementById('deleteModal'));
+    deleteModal.show();
+}
+
+// 設定預設日期為今天
+document.getElementById('add_class_date').value = new Date().toISOString().split('T')[0];
+</script>
 </body>
 </html>

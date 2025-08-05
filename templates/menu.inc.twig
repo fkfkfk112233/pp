@@ -1,8 +1,8 @@
 <!--左側選單列-->
 <div class="list-group">
     <a href="dashboard.php" class="list-group-item">首頁</a>
-    {% if role == '管理者' %}
-    <a href="permission.php" class="list-group-item">權限管理</a>
+    {% if role == '系統管理員' %}
+    <a href="permission.php" class="list-group-item">系統管理</a>
     {% endif %}
     <a href="logout.php" class="list-group-item">登出</a>
 </div>

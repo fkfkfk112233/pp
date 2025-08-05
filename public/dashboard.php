@@ -33,7 +33,7 @@ $role = $_SESSION['backend_login_role'] ?? ''; // <-- 注意這裡改為正確�
 $userList = [];
 $selectedUser = '';
 
-if ($role === '管理者') {
+if ($role === '管理者' || $role === '系統管理員') {
     // 取得所有學員清單
     $stmt_users = $pdo->prepare("SELECT DISTINCT name FROM attendance_log ORDER BY name");
     $stmt_users->execute();
@@ -51,7 +51,7 @@ if ($role === '一般') {
     $where = "WHERE al.name = :name";
     $params[':name'] = $useracc;
     $selectedUser = $useracc; // 一般使用者只能看自己
-}elseif ($role === '管理者') {
+}elseif ($role === '管理者' || $role === '系統管理員') {
     if (!empty($selectedUser)) {
         // 管理者選擇查看特定學員
         $where = "WHERE al.name = :name";
