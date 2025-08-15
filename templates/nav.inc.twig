@@ -6,6 +6,18 @@
                 <input class="form-control me-2" type="search" placeholder="Search" aria-label="Search"/>
                 <button class="btn btn-outline-success" type="submit">Search</button>
             </form> #}
+
+        {% if role == '管理者' %}
+            <form method="get" class="d-flex ms-3" role="search">
+                <label class="me-2 text-white">篩選姓名：</label>
+                <select class="form-select form-select-sm" name="filter_name" onchange="this.form.submit()">
+                    <option value="">-- 全部 --</option>
+                    {% for name in user_list %}
+                        <option value="{{ name }}" {% if name == filter_name %}selected{% endif %}>{{ name }}</option>
+                    {% endfor %}
+                </select>
+            </form>
+        {% endif %}
         </div>
     </div>
 </nav>

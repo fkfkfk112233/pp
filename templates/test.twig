@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <title>出缺勤系統</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+        {% include "nav.inc.twig" %}
+
+        <!--內容區塊-->
+        <main class="container-fluid mt-4">
+            <div class="center">
+                <h3>歡迎，{{ useracc }}（{{ role }}）</h3>
+            </div>
+            <!--分成左右2邊的佈區-->
+            <div class="row align-items-stretch">
+                <!-- 側邊選單 -->
+                <div class="col-md-2">
+                    {% include "menu.inc.twig" %}
+                </div>
+
+                <!-- 左邊：統計資訊卡 -->
+                <div class="col-md-5">
+                    <div class="card mb-3 shadow-sm rounded-4">
+                        <div class="card-header bg-primary text-white">
+                            <h5 class="mb-0">全班課程總覽</h5>
+                        </div>
+                        <div class="card-body">
+                            <p class="card-text">總課程時數：<strong>{{ total_class_hours }}</strong></p>
+                            <p class="card-text">總課程數：<strong>{{ total_classs }}</strong></p>
+                            <p class="card-text">總天數：<strong>{{ total_days }}</strong></p>
+                            <p class="card-text">出席率：<strong>{{ attendance_rate }}%</strong></p>
+                            <p class="card-text">遲到率：<strong>{{ late_rate }}%</strong></p>
+                            <p class="card-text">早退率：<strong>{{ leave_early_rate }}%</strong></p>
+                            <p class="card-text">平均到校時數：<strong>{{ average_raw_hours }}</strong></p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 右邊：圖表卡 -->
+                <div class="col-md-5">
+                    <div class="card mb-3 shadow-sm rounded-4">
+                        <div class="card-header bg-primary text-white">
+                            <h5 class="mb-0">各課程達成率</h5>
+                        </div>
+                        <div class="card-body">
+                            <canvas id="classChart" width="100%" height="60"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+    <footer class="position-absolute bottom-0">
+        {% include "footer.inc.twig" %}
+    </footer>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+
+        const ctx = document.getElementById('classChart').getContext('2d');
+        const classChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: {{ class_names|json_encode|raw }},
+                datasets: [{
+                    label: '出席率 (%)',
+                    data: {{ class_attendance_rates|json_encode|raw }},
+                    backgroundColor: 'rgba(54, 162, 235, 0.5)',
+                    borderColor: 'rgba(54, 162, 235, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 100,
+                        title: { display: true, text: '出席率 (%)' }
+                    },
+                    x: {
+                        title: { display: true, text: '課程名稱' }
+                    }
+                },
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return context.parsed.y + "%";
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    </script>
+</body>
+</html>
